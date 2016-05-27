@@ -105,6 +105,9 @@ RED.nodes = (function() {
                 }
             },
             registerNodeType: function(nt,def) {
+		// node-Pepper add some default definitions //
+		def.defaults.sendPromise = { value: false };	
+		// node-Pepper end //
                 nodeDefinitions[nt] = def;
                 if (def.category != "subflows") {
                     def.set = nodeSets[typeToId[nt]];

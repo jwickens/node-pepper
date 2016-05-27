@@ -17,6 +17,9 @@
 var util = require("util");
 var EventEmitter = require("events").EventEmitter;
 var when = require("when");
+// node-{epper require poll
+var poll = require('when/poll');
+// end node-Pepper
 
 var redUtil = require("../util");
 var Log = require("../log");
@@ -24,6 +27,10 @@ var context = require("./context");
 var flows = require("./flows");
 
 function Node(n) {
+    // node-Pepper sendPromise config and promiseResolvers array //
+    this.sendPromise = n.sendPromise;
+    this.promiseResolvers = {};
+    // end node-Pepper //
     this.id = n.id;
     this.type = n.type;
     this.z = n.z;
@@ -105,7 +112,32 @@ Node.prototype.close = function() {
     }
 };
 
+// node-Pepper rename send to sendSync and create a new send that checks for sendPromise //
+
 Node.prototype.send = function(msg) {
+   var node = this;
+   if (node.sendPromise) {
+	var msgid;
+   	if (util.isArray(msg)) {
+		msg.some(function(m) { 
+			if (m._msgid) {
+				msgid = m._msgid;
+				return true;
+			}
+		});
+	} else {
+		msgid = msg._msgid;
+	}
+	node.promiseResolvers[msgid].resolve(msg.payload);
+	delete node.promiseResolvers[msgid];
+   } else {
+       this.sendSync(msg);
+   }
+};
+
+// node-Pepper end //
+
+Node.prototype.sendSync = function(msg) {
     var msgSent = false;
     var node;
 
@@ -191,6 +223,7 @@ Node.prototype.send = function(msg) {
 };
 
 Node.prototype.receive = function(msg) {
+    var node = this
     if (!msg) {
         msg = {};
     }
@@ -198,10 +231,27 @@ Node.prototype.receive = function(msg) {
         msg._msgid = redUtil.generateId();
     }
     this.metric("receive",msg);
+
+    // node-Pepper check to see if this node is set to sendPromise  and then create a promise//
+    if (node.sendPromise) {
+        var promise = when.promise(function(resolve, error) {
+              node.promiseResolvers[msg._msgid] = { resolve: resolve, error: error };
+         });
+	msg.payload = promise;
+        node.sendSync(msg)
+    }
+    // end node-Pepper //
     try {
         this.emit("input", msg);
     } catch(err) {
-        this.error(err,msg);
+        // node-Pepper check to see if this node is set to sendPromise and then resolve with error//
+        if (node.sendPromise) {
+		node.promiseResolvers[msg._msgid].error(err);
+		delete node.promiseResolvers[msgid];
+	} else {
+	// end node-Pepper ignore closing bracket //
+        	this.error(err,msg);
+	}
     }
 };
 
@@ -228,7 +278,15 @@ Node.prototype.warn = function(msg) {
 
 Node.prototype.error = function(logMessage,msg) {
     logMessage = logMessage || "";
-    log_helper(this, Log.ERROR, logMessage);
+    /*/ node-Pepper if we error we resolve the promise //
+    var node = this;
+    if (node.sendPromise) {
+    	node.promiseResolvers[msg._msgid].error(logMessage);
+    	delete node.promiseResolvers[msg._msgid];
+    } else {
+    // end node-Pepper ignore closing bracket /*/
+       log_helper(this, Log.ERROR, logMessage);
+    //}
     /* istanbul ignore else */
     if (msg) {
         flows.handleError(this,logMessage,msg);

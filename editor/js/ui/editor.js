@@ -639,7 +639,18 @@ RED.editor = (function() {
             });
             $( "#dialog" ).dialog("option","buttons",buttons);
         }
-        $("#dialog-form").html($("script[data-template-name='"+type+"']").html());
+        // node-Pepper add some default fields //
+        var nodeHtml = $("script[data-template-name='"+type+"']").html()
+	/*nodeHtml += '<br /><div class="form-row"><span><i class="fa fa-fire" aria-hidden="true"></i><b>Spice Options</b><span></div>' + 
+			'<div class="form-row">'+
+	       			'<label>&nbsp</label>' +
+				'<input type="checkbox" id="node-input-sendPromise" style="display: inline-block; width: auto; vertical-align: top;" placeholder="sendPromise">' + 
+				'<label for="node-input-sendPromise" style="width: 70%;"><span>&nbspSend Promises</span></label>' +
+    			'</div>';*/
+	var pepperHtml = $("script[data-template-name='spice-config']").html();
+	nodeHtml += pepperHtml;
+        // end node-Pepper ignore variable nodeHtml //
+        $("#dialog-form").html(nodeHtml);
         var ns;
         if (node._def.set.module === "node-red") {
             ns = "node-red";
