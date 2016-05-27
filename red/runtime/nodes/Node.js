@@ -27,10 +27,10 @@ var context = require("./context");
 var flows = require("./flows");
 
 function Node(n) {
-    // node-Pepper sendPromise config and promiseResolvers array //
+    // node-Pepper sendPromise config and promiseResolvers array
     this.sendPromise = n.sendPromise;
     this.promiseResolvers = {};
-    // end node-Pepper //
+    // end node-Pepper
     this.id = n.id;
     this.type = n.type;
     this.z = n.z;
@@ -112,30 +112,38 @@ Node.prototype.close = function() {
     }
 };
 
-// node-Pepper rename send to sendSync and create a new send that checks for sendPromise //
+// node-Pepper rename send to sendSync and create a new send that checks for sendPromise
 
 Node.prototype.send = function(msg) {
    var node = this;
    if (node.sendPromise) {
 	var msgid;
-   	if (util.isArray(msg)) {
-		msg.some(function(m) { 
-			if (m._msgid) {
-				msgid = m._msgid;
-				return true;
-			}
-		});
-	} else {
-		msgid = msg._msgid;
+   	if (! util.isArray(msg)) {
+		msg = [msg];
 	}
-	node.promiseResolvers[msgid].resolve(msg.payload);
+	msg.some(function(m) { 
+		if (m._msgid) {
+			msgid = m._msgid;
+			return true;
+		}
+	});
+	//node.warn("msg " + msgid + " inside of Node.send: " + JSON.stringify(msg));
+	//node.warn("msg resolver inside of Node.send: " + JSON.stringify(node.promiseResolvers[msgid]));
+	node.promiseResolvers[msgid].forEach(function(resolver, i) {
+		//node.warn("resolving output " + i);
+		if (msg[i]) {
+			resolver.resolve(msg[i].payload);
+		} else {
+			resolver.reject("null output");
+		}
+	});
 	delete node.promiseResolvers[msgid];
    } else {
        this.sendSync(msg);
    }
 };
 
-// node-Pepper end //
+// node-Pepper end
 
 Node.prototype.sendSync = function(msg) {
     var msgSent = false;
@@ -195,6 +203,11 @@ Node.prototype.sendSync = function(msg) {
                             }
                             if (msgSent) {
                                 var clonedmsg = redUtil.cloneMessage(m);
+				// node-Pepper can't clone the promise....
+				if (m.payload && m.payload.then) {
+					clonedmsg.payload = m.payload;
+				}
+				// end node-Pepper
                                 sendEvents.push({n:node,m:clonedmsg});
                             } else {
                                 sendEvents.push({n:node,m:m});
@@ -232,28 +245,34 @@ Node.prototype.receive = function(msg) {
     }
     this.metric("receive",msg);
 
-    // node-Pepper check to see if this node is set to sendPromise  and then create a promise//
+    // node-Pepper check to see if this node is set to sendPromise  and then create a promise
     if (node.sendPromise) {
-        var promise = when.promise(function(resolve, error) {
-              node.promiseResolvers[msg._msgid] = { resolve: resolve, error: error };
-         });
-	msg.payload = promise;
-        node.sendSync(msg)
+	var promiseResolvers = [];
+	var m = [];
+	node.wires.forEach(function() {
+		var promise = when.promise(function(resolve, reject) {
+			promiseResolvers.push({resolve: resolve, reject: reject});
+		});
+		var clonedmsg = redUtil.cloneMessage(msg);
+		clonedmsg.payload = promise;
+		m.push(clonedmsg);
+	});
+	node.promiseResolvers[msg._msgid] = promiseResolvers; 
+        node.sendSync(m)
     }
-    // end node-Pepper //
+    // end node-Pepper
     try {
         this.emit("input", msg);
     } catch(err) {
-        // node-Pepper check to see if this node is set to sendPromise and then resolve with error//
-        if (node.sendPromise) {
-		node.promiseResolvers[msg._msgid].error(err);
-		delete node.promiseResolvers[msgid];
-	} else {
-	// end node-Pepper ignore closing bracket //
+        // node-Pepper check to see if this node is set to sendPromise and then resolve with error
+		// todo
+	// end node-Pepper ignore closing bracket
         	this.error(err,msg);
-	}
+	//}
     }
 };
+
+
 
 function log_helper(self, level, msg) {
     var o = {
