@@ -1,73 +1,37 @@
-# Node-RED
+# Node-Pepper
 
+Node-Pepper brings some spicy mods to Node-RED:
 http://nodered.org
 
-[![Build Status](https://travis-ci.org/node-red/node-red.svg)](https://travis-ci.org/node-red/node-red)
-[![Coverage Status](https://coveralls.io/repos/node-red/node-red/badge.svg?branch=master)](https://coveralls.io/r/node-red/node-red?branch=master)
+# General 
 
-A visual tool for wiring the Internet of Things.
+In general what we are trying to do is create mods of the Node module (called Node.js, not to be confused with the JS environment Node-RED runs on!). These mods then apply to all nodes that have been created with node-RED. 
 
-![Node-RED: A visual tool for wiring the Internet of Things](http://nodered.org/images/node-red-screenshot.png)
+So put your spice everywhere!
 
-## Quick Start
+# Work in progress
 
-Check out http://nodered.org/docs/getting-started/ for full instructions on getting
-started.
+Right now all I have implemented is one mod (see below.) I'm pretty proud of it though, I think with a few more mods we could learn how to mod in a modular way. This would involve a hook for extending the Node.js file as well as extending the editor interface with the additional options. These hooks should be as minimal as possible so updating node-pepper with node-red updates should be as little work as possible.
 
-1. `sudo npm install -g node-red`
-2. `node-red`
-3. Open <http://localhost:1880>
+# Promises
 
-## Getting Help
+This mod allows you to send a promise from the node rather than a normal msg. The msg.payload is the promise and it resolves on node.send. The benefit of this is that instead of waiting for long-running nodes you can begin the call and continue with your flow and then check your promise later down the line.
 
-More documentation can be found [here](http://nodered.org/docs).
+see examples/promises.json
 
-For further help, or general discussion, please use the
-[mailing list](https://groups.google.com/forum/#!forum/node-red).
+# Todos wishlists and hype more or less in that order
 
-## Developers
+Imagine being able to set your own custom loggers for every node at once or just a few.
 
-If you want to run the latest code from git, here's how to get started:
+Imagine nodes having their own set of flow controls -- reducing the amount nodes needed. Imagine having a way to finally do parallel calls or flow branches without complexity.
 
-1. Install grunt, the build tool
+Imagine being able to use your own favourite editor like vim in the function editor. Imagine being able to click a button to export the function node into a custom node. Or to import a module as an editable function node. 
 
-        npm install -g grunt-cli
+Imagine that instead of having to put nodes in subflows to reuse them elsewhere you also had the option of "channels" -- colour coded links from one node to another that can cross paths with other links without causing additional msgs on those other links.
 
-2. Clone the code:
+Imagine a richer editor experience that allows graphs and other UI elements within the node, such as with meemoo.org
 
-        git clone https://github.com/node-red/node-red.git
-        cd node-red
+Imagine that nodes learned where to send their messages to -- a cognitive node-red. Nodes further down the flow could feedback the usefulness of the message, updating the nodes neural net.
 
-3. Install the node-red dependencies
 
-        npm install
 
-4. Build the code
-
-        grunt build
-
-5. Run
-
-        node red.js
-
-## Contributing
-
-Before raising a pull-request, please read our
-[contributing guide](https://github.com/node-red/node-red/blob/master/CONTRIBUTING.md).
-
-This project adheres to the [Contributor Covenant 1.4](http://contributor-covenant.org/version/1/4/).
- By participating, you are expected to uphold this code. Please report unacceptable
- behavior to any of the [project's core team](https://github.com/orgs/node-red/teams/core).
-
-## Authors
-
-Node-RED is a creation of [IBM Emerging Technology](http://ibm.com/blogs/et).
-
-* Nick O'Leary [@knolleary](http://twitter.com/knolleary)
-* Dave Conway-Jones [@ceejay](http://twitter.com/ceejay)
-
-For more open-source projects from IBM, head over [here](http://ibm.github.io).
-
-## Copyright and license
-
-Copyright 2013, 2016 IBM Corp. under [the Apache 2.0 license](LICENSE).
